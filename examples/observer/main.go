@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 
-	claudeagent "claude-agent-sdk-go"
+	claudeagent "github.com/satishbabariya/claude-agent-sdk-go"
 )
 
 func main() {

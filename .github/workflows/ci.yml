@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      # examples/observer only needs to *compile* here — actually running it
+      # needs the real `claude` CLI, which CI intentionally doesn't install;
+      # see the package's own tests (none require it) for what's covered.
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Format check
+        run: |
+          diff="$(gofmt -l .)"
+          if [ -n "$diff" ]; then
+            echo "gofmt found unformatted files:"
+            echo "$diff"
+            exit 1
+          fi
+
+      - name: Test
+        run: go test ./... -race -v
