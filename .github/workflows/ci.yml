@@ -15,8 +15,11 @@ jobs:
           go-version: "1.25"
 
       # examples/observer only needs to *compile* here — actually running it
-      # needs the real `claude` CLI, which CI intentionally doesn't install;
-      # see the package's own tests (none require it) for what's covered.
+      # needs the real `claude` CLI, which CI intentionally doesn't install.
+      # session_test.go's Session/NewSession/Send tests don't need it either:
+      # they re-exec this same test binary as a fake CLI (see its TestMain),
+      # so the actual subprocess/stream-json protocol layer is still
+      # genuinely exercised in CI, just against a stand-in process.
       - name: Build
         run: go build ./...
 
