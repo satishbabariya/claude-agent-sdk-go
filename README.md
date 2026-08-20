@@ -67,11 +67,30 @@ go test ./...
 
 `hooks_test.go` covers `ParseHookInput` against a real captured
 `PostToolUse` payload shape (pure JSON decoding, no subprocess needed).
-`Session`/`Query` — the actual subprocess/protocol layer — don't have unit
-tests yet: every claim above about them was verified by hand against the
-real `claude` CLI instead (see `examples/observer`, a runnable proof, not a
-mock). A package this thin is arguably better served by integration-style
-checks against the real binary than by mocking the subprocess, but a
-real (not mocked) integration test — spawn `claude`, assert on `Result` —
-gated behind a build tag so `go test ./...` stays fast and hook-free by
+
+`session_test.go` covers the actual subprocess/protocol layer —
+`NewSession`/`Send` — via a real subprocess, not a mock: `TestMain`
+re-execs the test binary itself as a stand-in `claude` CLI (the same
+`TestHelperProcess` technique the standard library's `os/exec` tests use),
+driven through `Options.ClaudeExecutable`/`Env`. What's under test is the
+real code path — process spawn, stdin encoding, stdout scanning, result-
+line routing — against a process that speaks the real wire shape
+(`stdinMessage` in, `resultLine` out), not Session's own methods mocked
+out. Covers a single-turn round trip, multiple turns sharing one
+`session_id` with `cache_read_input_tokens` rising (the automated version
+of the manual signal this project's own history cites as evidence of real
+context accumulation), API error status propagation, a subprocess dying
+mid-conversation surfacing a clear `Send` error instead of a hang, and
+clean `Close()`. This runs in CI (see `examples/observer`'s separate,
+still-manual verification note below for what remains outside `go test`).
+
+What's still verified by hand, not by `go test ./...`: the real `claude`
+CLI's actual behavior (argument acceptance, real model responses,
+multi-turn context genuinely carrying real tokens) — see
+`examples/observer`, a runnable proof against the real binary, not a
+mock. The fake-CLI tests above prove this package's OWN code is correct
+against the documented wire protocol; they can't prove the real CLI still
+speaks that protocol the same way in some future version. A real (not
+mocked) integration test — spawn `claude` for real, assert on `Result` —
+gated behind a build tag so `go test ./...` stays fast and CLI-free by
 default, is the next thing worth adding here.
