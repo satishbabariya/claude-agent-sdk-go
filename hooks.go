@@ -45,6 +45,14 @@ type HookInput struct {
 	ToolName       string          `json:"tool_name"`
 	ToolInput      json.RawMessage `json:"tool_input"`
 	ToolResponse   json.RawMessage `json:"tool_response"`
+	// Prompt is UserPromptSubmit's payload field: the user's submitted text,
+	// verbatim. Confirmed against a real captured payload (a stub hook
+	// command dumping stdin to a file, the same technique this package's
+	// other fields were verified with) — a real session's UserPromptSubmit
+	// payload also carries prompt_id and permission_mode, which nothing in
+	// this package or its callers has needed yet, so they're not modeled
+	// here; add them if a real caller needs them, not preemptively.
+	Prompt string `json:"prompt"`
 }
 
 // ParseHookInput reads and decodes one hook payload from r (typically

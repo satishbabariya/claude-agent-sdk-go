@@ -46,6 +46,32 @@ func TestParseHookInputMalformed(t *testing.T) {
 	}
 }
 
+// This payload shape is not guessed either: captured the same way, from a
+// real UserPromptSubmit invocation (a stub hook command dumping stdin to a
+// file, project-scoped, against a real `claude -p` call).
+const realUserPromptSubmitPayload = `{
+	"session_id": "89f77981-13a3-43d1-b96a-b0e269a8f697",
+	"transcript_path": "/Users/x/.claude/projects/-Users-x-proj/89f77981.jsonl",
+	"cwd": "/Users/x/proj",
+	"prompt_id": "6dcd3581-eba2-4634-b78b-0537a393444a",
+	"permission_mode": "auto",
+	"hook_event_name": "UserPromptSubmit",
+	"prompt": "What is claude-mem-go's get_observations tool for?"
+}`
+
+func TestParseHookInputUserPromptSubmitRealShape(t *testing.T) {
+	in, err := ParseHookInput(strings.NewReader(realUserPromptSubmitPayload))
+	if err != nil {
+		t.Fatalf("ParseHookInput: %v", err)
+	}
+	if in.Event != HookEventUserPromptSubmit {
+		t.Errorf("Event = %q, want %q", in.Event, HookEventUserPromptSubmit)
+	}
+	if in.Prompt != "What is claude-mem-go's get_observations tool for?" {
+		t.Errorf("Prompt = %q, want the real submitted prompt text verbatim", in.Prompt)
+	}
+}
+
 func TestParseHookInputSessionStartHasNoToolFields(t *testing.T) {
 	in, err := ParseHookInput(strings.NewReader(`{"session_id":"s1","hook_event_name":"SessionStart"}`))
 	if err != nil {
