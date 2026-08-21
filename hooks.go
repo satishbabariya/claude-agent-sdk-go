@@ -61,6 +61,27 @@ type HookInput struct {
 	// on whether AgentID is set, so callers here need the same signal.
 	AgentID   string `json:"agent_id"`
 	AgentType string `json:"agent_type"`
+	// StopHookActive is Claude Code's own re-entry signal on Stop and
+	// SubagentStop payloads: true when the turn is being retried because a
+	// Stop hook blocked it from ending. Claude Code asks hook authors to
+	// honor it in so many words — when the block cap is hit it emits "A
+	// hook blocked the turn from ending N consecutive times — overriding
+	// and ending turn. For Stop/SubagentStop hooks, check stop_hook_active
+	// in the input and return success while it's true."
+	//
+	// The cap defaults to 8 (CLAUDE_CODE_STOP_HOOK_BLOCK_CAP), so a Stop
+	// hook that ignores this can run its full body up to eight extra times
+	// per turn whenever any OTHER Stop hook in the user's setup blocks —
+	// which for an expensive hook is real, repeated, wasted work.
+	//
+	// Confirmed against a real captured Stop payload (a stub hook dumping
+	// stdin, the same technique used for the fields above): present as a
+	// JSON boolean. Claude Code's own input schema has it non-optional on
+	// both Stop and SubagentStop, unlike last_assistant_message and
+	// background_tasks beside it, so it is always on the wire — and it is
+	// also the only field of those three any caller here needs yet, which
+	// is why it is the only one modeled (see Prompt's note above).
+	StopHookActive bool `json:"stop_hook_active"`
 }
 
 // ParseHookInput reads and decodes one hook payload from r (typically
