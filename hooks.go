@@ -53,6 +53,14 @@ type HookInput struct {
 	// this package or its callers has needed yet, so they're not modeled
 	// here; add them if a real caller needs them, not preemptively.
 	Prompt string `json:"prompt"`
+	// AgentID and AgentType are present only when a hook fires from inside a
+	// Task-tool subagent invocation rather than the main session — absent
+	// (empty string) otherwise. claude-mem's own adapter
+	// (src/cli/adapters/claude-code.ts normalizeInput) reads these same two
+	// fields off the same payload and several of its handlers gate behavior
+	// on whether AgentID is set, so callers here need the same signal.
+	AgentID   string `json:"agent_id"`
+	AgentType string `json:"agent_type"`
 }
 
 // ParseHookInput reads and decodes one hook payload from r (typically

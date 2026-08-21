@@ -38,6 +38,37 @@ func TestParseHookInputRealShape(t *testing.T) {
 	if !strings.Contains(string(in.ToolResponse), "hi\\n") {
 		t.Errorf("ToolResponse = %s, want raw JSON containing the stdout", in.ToolResponse)
 	}
+	if in.AgentID != "" || in.AgentType != "" {
+		t.Errorf("AgentID/AgentType = %q/%q, want both empty for a main-session payload with no agent_id field", in.AgentID, in.AgentType)
+	}
+}
+
+// Claude Code's documented hook payload shape adds agent_id/agent_type only
+// when a hook fires from inside a Task-tool subagent invocation; this
+// package hasn't captured one live yet (see the AgentID/AgentType doc
+// comment), so this payload is built from that documented shape rather than
+// a captured one.
+const subagentPreToolUsePayload = `{
+	"session_id": "86108f04-c501-4c56-b332-0ab2ba2a067d",
+	"cwd": "/Users/x/proj",
+	"hook_event_name": "PreToolUse",
+	"tool_name": "Read",
+	"tool_input": {"file_path": "/Users/x/proj/main.go"},
+	"agent_id": "agent-1a2b3c",
+	"agent_type": "general-purpose"
+}`
+
+func TestParseHookInputSubagentPayloadPopulatesAgentFields(t *testing.T) {
+	in, err := ParseHookInput(strings.NewReader(subagentPreToolUsePayload))
+	if err != nil {
+		t.Fatalf("ParseHookInput: %v", err)
+	}
+	if in.AgentID != "agent-1a2b3c" {
+		t.Errorf("AgentID = %q, want %q", in.AgentID, "agent-1a2b3c")
+	}
+	if in.AgentType != "general-purpose" {
+		t.Errorf("AgentType = %q, want %q", in.AgentType, "general-purpose")
+	}
 }
 
 func TestParseHookInputMalformed(t *testing.T) {
